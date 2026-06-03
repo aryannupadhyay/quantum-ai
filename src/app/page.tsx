@@ -1,5 +1,6 @@
 "use client";
 
+
 import { useState, useRef, useEffect } from "react";
 import { motion } from "framer-motion";
 import ReactMarkdown from "react-markdown";
@@ -58,30 +59,48 @@ const suggestionCards = [
     description: "Create a personalized roadmap for any subject",
   },
 ];
-
-const demoMessages = [
+type Message = {
+  role: string;
+  content: string;
+  fileName?: string | null;
+};
+const demoMessages: Message[] = [
   {
     role: "assistant",
     content:
       "What would you like to learn today? Upload a document, ask a question, generate notes, or explore a new topic.",
+    fileName: null,
   },
-  
 ];
 
 export default function Home() {
   const [collapsed, setCollapsed] = useState(false);
   const [message, setMessage] = useState("");
-  const [messages, setMessages] = useState(demoMessages);
+  const [messages, setMessages] =
+  useState<Message[]>(demoMessages);
+  
   const [currentChatId, setCurrentChatId] = useState<number | null>(null);
   const [isThinking, setIsThinking] = useState(false);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [hasStartedChat, setHasStartedChat] = useState(false);
   const [chatHistory, setChatHistory] = useState<
   {
     id: number;
     title: string;
-    messages: typeof demoMessages;
+    messages: {
+      role: string;
+      content: string;
+      fileName?: string | null;
+    }[];
   }[]
 >([]);
+useEffect(() => {
+  const savedChats = localStorage.getItem("chatHistory");
+
+  if (savedChats) {
+    setChatHistory(JSON.parse(savedChats));
+  }
+}, []);
   const [activeTab, setActiveTab] = useState("chat");
   const [currentChatTitle, setCurrentChatTitle] = useState("New Chat");
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -91,9 +110,10 @@ export default function Home() {
   setMessages((prev) => [
     ...prev,
     {
-      role: "user",
-      content: message,
-    },
+  role: "user",
+  content: message,
+  fileName: selectedFile?.name || null,
+},
   ]);
   setIsThinking(true);
   setHasStartedChat(true);
@@ -104,6 +124,7 @@ export default function Home() {
 }
 
   setMessage("");
+  setSelectedFile(null);
 
   try {
   const res = await fetch("/api/chat", {
@@ -180,6 +201,12 @@ useEffect(() => {
     )
   );
 }, [messages, currentChatId]);
+useEffect(() => {
+  localStorage.setItem(
+    "chatHistory",
+    JSON.stringify(chatHistory)
+  );
+}, [chatHistory]);
 
   return (
     <div className="relative h-screen overflow-hidden bg-[#050816] text-white">
@@ -471,6 +498,11 @@ useEffect(() => {
                       }`}
                     >
                       <div className="leading-8">
+  {msg.fileName && (
+  <div className="mb-3 rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white/70">
+    📄 {msg.fileName}
+  </div>
+)}                    
   <ReactMarkdown>
     {msg.content}
   </ReactMarkdown>
@@ -526,10 +558,45 @@ useEffect(() => {
 
                 <div className="flex items-end gap-3">
 
-                  <button className="rounded-2xl p-3 hover:bg-white/10">
-                    <Paperclip size={20} />
-                  </button>
+                  <label className="cursor-pointer rounded-2xl p-3 hover:bg-white/10">
+  <Paperclip size={20} />
 
+  <input
+    type="file"
+    accept=".pdf"
+    className="hidden"
+    onChange={(e) => {
+      const file = e.target.files?.[0];
+
+      if (file) {
+        setSelectedFile(file);
+      }
+      e.target.value = "";
+    }}
+  />
+</label>
+{selectedFile && (
+  <div className="group relative mb-3 rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white/70 transition-all duration-300 hover:-translate-y-1 hover:border-blue-400/40 hover:bg-white/[0.08] hover:shadow-[0_0_30px_rgba(59,130,246,0.18)]">
+
+    <div className="flex items-center gap-2">
+      <span className="text-base transition-transform duration-300 group-hover:scale-110">
+        📄
+      </span>
+
+      <span className="truncate">
+        {selectedFile.name}
+      </span>
+    </div>
+
+    <button
+      onClick={() => setSelectedFile(null)}
+      className="absolute -right-2 -top-2 flex h-7 w-7 items-center justify-center rounded-full border border-red-500/40 bg-red-500/15 text-xs text-red-400 opacity-0 shadow-lg backdrop-blur-md transition-all duration-300 group-hover:opacity-100 hover:scale-110 hover:bg-red-500/25"
+    >
+      ✕
+    </button>
+
+  </div>
+)}
                   <textarea
                     value={message}
                     onChange={(e) =>
