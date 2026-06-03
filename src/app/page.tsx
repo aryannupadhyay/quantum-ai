@@ -76,6 +76,7 @@ const demoMessages: Message[] = [
 export default function Home() {
   const [collapsed, setCollapsed] = useState(false);
   const [message, setMessage] = useState("");
+  const [pdfText, setPdfText] = useState("");
   const [messages, setMessages] =
   useState<Message[]>(demoMessages);
   
@@ -133,8 +134,9 @@ useEffect(() => {
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      message: userMessage,
-    }),
+  message: userMessage,
+  pdfText,
+}),
   });
 
   const data = await res.json();
@@ -565,15 +567,17 @@ useEffect(() => {
     type="file"
     accept=".pdf"
     className="hidden"
-    onChange={(e) => {
-      const file = e.target.files?.[0];
+    onChange={async (e) => {
+  const file = e.target.files?.[0];
 
-      if (file) {
-        setSelectedFile(file);
-      }
-      e.target.value = "";
-    }}
-  />
+  if (file) {
+    setSelectedFile(file);
+    setPdfText("");
+  }
+
+  e.target.value = "";
+}}
+/>
 </label>
 {selectedFile && (
   <div className="group relative mb-3 rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white/70 transition-all duration-300 hover:-translate-y-1 hover:border-blue-400/40 hover:bg-white/[0.08] hover:shadow-[0_0_30px_rgba(59,130,246,0.18)]">

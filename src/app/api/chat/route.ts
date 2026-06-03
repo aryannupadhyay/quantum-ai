@@ -6,7 +6,7 @@ const ai = new GoogleGenAI({
 
 export async function POST(req: Request) {
   try {
-    const { message } = await req.json();
+    const { message, pdfText } = await req.json();
 
     const response = await ai.models.generateContent({
       model: "gemini-2.5-flash",
@@ -22,6 +22,8 @@ Rules:
 - If user writes in Hindi, reply in Hindi.
 - If user mixes Hindi and English, reply naturally in Hinglish.
 - Be concise and helpful.
+PDF Content:
+${pdfText || "No PDF uploaded"}
 
 User Message:
 ${message}
